@@ -59,9 +59,10 @@ class ServerConfig(object):
 
 
 class LoggingConfig:
-    def __init__(self, filename_pattern=None, date_format=None) -> None:
+    def __init__(self, filename_pattern=None, date_format=None, resolve_hostname=True) -> None:
         self.filename_pattern = filename_pattern
         self.date_format = date_format
+        self.resolve_hostname = resolve_hostname
 
     @classmethod
     def from_json(cls, json_config):
@@ -71,6 +72,7 @@ class LoggingConfig:
             json_logging_config = json_config
             config.filename_pattern = json_logging_config.get('execution_file')
             config.date_format = json_logging_config.get('execution_date_format')
+            config.resolve_hostname = json_logging_config.get('resolve_hostname')
 
         return config
 

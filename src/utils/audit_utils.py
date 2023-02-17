@@ -17,6 +17,8 @@ LOGGER = logging.getLogger('script_server.audit_utils')
 
 
 def get_all_audit_names(request_handler):
+    need_resolve_hostname = request_handler.application.server_config.logging_config.resolve_hostname
+
     result = {}
 
     auth_username = request_handler.application.identification.identify_for_audit(request_handler)
@@ -31,21 +33,23 @@ def get_all_audit_names(request_handler):
     if proxied_ip:
         result[PROXIED_IP] = proxied_ip
 
-        proxied_hostname = _resolve_hostname(proxied_ip)
+        proxied_hostname = _resolve_hostname(proxied_ip, need_resolve_hostname)
         if proxied_hostname:
             result[PROXIED_HOSTNAME] = proxied_hostname
 
     remote_ip = request_handler.request.remote_ip
     result[IP] = remote_ip
 
-    hostname = _resolve_hostname(remote_ip)
+    hostname = _resolve_hostname(remote_ip, need_resolve_hostname)
     if hostname:
         result[HOSTNAME] = hostname
 
     return result
 
 
-def _resolve_hostname(ip):
+def _resolve_hostname(ip, resolve=True):
+    if not resolve:
+        return None
     try:
         (hostname, _, _) = socket.gethostbyaddr(ip)
         return hostname
