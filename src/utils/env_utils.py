@@ -1,5 +1,9 @@
+import logging
 import os
 import sys
+
+
+LOGGER = logging.getLogger('script_server.env_utils')
 
 
 class EnvVariables:
@@ -45,7 +49,7 @@ def is_min_version(version, system_version=None):
         major_expected = int(version_split[0])
         minor_expected = int(version_split[1])
     except ValueError:
-        print("Couldn't parse version: " + version)
+        LOGGER.warning("Couldn't parse version: " + version)
         return False
 
     return (system_version[0] == major_expected) and (system_version[1] >= minor_expected)

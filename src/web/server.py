@@ -886,7 +886,7 @@ def init(server_config: ServerConfig,
     intercept_stop_when_running_scripts(io_loop, execution_service)
 
     http_protocol = 'https' if server_config.ssl else 'http'
-    print('Server is running on: %s://%s:%s' % (http_protocol, server_config.address, server_config.port))
+    LOGGER.info('Server is running on: %s://%s:%s' % (http_protocol, server_config.address, server_config.port))
 
     if start_server:
         io_loop.start()
