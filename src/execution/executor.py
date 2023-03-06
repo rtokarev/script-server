@@ -3,6 +3,7 @@ import re
 import sys
 
 from execution import process_popen, process_base
+from execution.tmp_dir import ScriptTmpDir
 from model import model_helper
 from model.model_helper import read_bool
 from utils import file_utils, process_utils, os_utils
@@ -71,11 +72,12 @@ def _wrap_values(user_values, parameters):
 
 
 class ScriptExecutor:
-    def __init__(self, config, parameter_values, env_vars: EnvVariables):
+    def __init__(self, config, parameter_values, env_vars: EnvVariables, audit_name):
         self.config = config
         self._env_vars = env_vars
         self._parameter_values = _wrap_values(parameter_values, config.parameters)
         self._working_directory = _normalize_working_dir(config.working_directory)
+        self._tmp_dir = ScriptTmpDir.prepare_new_folder(audit_name)
 
         self.script_base_command = process_utils.split_command(
             self.config.script_command,
@@ -94,12 +96,18 @@ class ScriptExecutor:
 
         script_args = build_command_args(parameter_values, self.config)
         command = self.script_base_command + script_args
-        env_variables = _build_env_variables(parameter_values, self.config.parameters, execution_id)
+        env_variables = _build_env_variables(self._tmp_dir, parameter_values, self.config.parameters, execution_id)
 
         all_env_variables = self._env_vars.build_env_vars(env_variables)
 
         process_wrapper = _process_creator(self, command, self._working_directory, all_env_variables)
-        process_wrapper.start()
+        try:
+            process_wrapper.start()
+        except:
+            LOGGER.exception("Failed to start script")
+            self.finished()
+            raise Exception('Failed to start script: ' + str(e))
+        process_wrapper.add_finish_listener(self)
 
         self.process_wrapper = process_wrapper
 
@@ -208,6 +216,9 @@ class ScriptExecutor:
         self.protected_output_stream.dispose()
         self.process_wrapper.cleanup()
 
+    def finished(self):
+        ScriptTmpDir.cleanup_folder(self._tmp_dir)
+
 
 def build_command_args(param_values, config):
     result = []
@@ -270,8 +281,10 @@ def _to_env_name(key):
     return 'PARAM_' + replaced.upper()
 
 
-def _build_env_variables(parameter_values, parameters, execution_id):
-    result = {}
+def _build_env_variables(tmp_dir, parameter_values, parameters, execution_id):
+    result = {
+        'TMP_DIR': tmp_dir
+    }
     excluded = []
     for param_name, value in parameter_values.items():
         if isinstance(value, list) or (value is None):

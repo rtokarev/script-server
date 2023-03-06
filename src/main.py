@@ -12,6 +12,7 @@ from config.config_service import ConfigService
 from execution.execution_service import ExecutionService
 from execution.id_generator import IdGenerator
 from execution.logging import ExecutionLoggingService, LogNameCreator, ExecutionLoggingController
+from execution.tmp_dir import ScriptTmpDir
 from features.executions_callback_feature import ExecutionsCallbackFeature
 from features.fail_alerter_feature import FailAlerterFeature
 from features.file_download_feature import FileDownloadFeature
@@ -123,6 +124,7 @@ def main():
     execution_logging_controller.start()
 
     user_file_storage = UserFileStorage(secret)
+    ScriptTmpDir(user_file_storage, TEMP_FOLDER)
     file_download_feature = FileDownloadFeature(user_file_storage, TEMP_FOLDER)
     file_download_feature.subscribe(execution_service)
     file_upload_feature = FileUploadFeature(user_file_storage, TEMP_FOLDER)
